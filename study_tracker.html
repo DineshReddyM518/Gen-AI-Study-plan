@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Log — Agentic Engineering Study Tracker</title>
+<style>
+  :root{
+    --navy:#101B33;
+    --navy-deep:#0B1426;
+    --grid:#24365E;
+    --paper:#EAF1FF;
+    --paper-dim:#9FB2D9;
+    --cyan:#6FE3FF;
+    --stamp-red:#E4572E;
+    --stamp-gold:#FFB627;
+    --sheet:#132244;
+    --sheet-line:#2D416E;
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--navy), var(--navy)),
+      repeating-linear-gradient(0deg, transparent, transparent 27px, var(--grid) 28px),
+      repeating-linear-gradient(90deg, transparent, transparent 27px, var(--grid) 28px);
+    background-blend-mode: normal;
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    min-height: 100vh;
+    padding: 28px 16px 80px;
+  }
+
+  .wrap{ max-width: 860px; margin: 0 auto; }
+
+  /* ===== HEADER ===== */
+  header{
+    border: 1.5px solid var(--sheet-line);
+    background: var(--sheet);
+    padding: 22px 24px;
+    position: relative;
+    margin-bottom: 18px;
+  }
+  header::before{
+    content: "DWG NO. AE-06 / REV A";
+    position: absolute;
+    top: 10px; right: 16px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--paper-dim);
+  }
+  h1{
+    font-family: 'Space Grotesk', 'Segoe UI', Arial, sans-serif;
+    font-weight: 700;
+    font-size: clamp(26px, 4vw, 38px);
+    margin: 0 0 4px;
+    line-height: 1.05;
+  }
+  .subtitle{
+    color: var(--paper-dim);
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+
+  .meter-row{
+    display:flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meter{ flex: 1 1 260px; min-width: 220px; }
+  .meter-label{
+    display:flex; justify-content: space-between;
+    font-size: 11px; color: var(--paper-dim); margin-bottom: 6px;
+  }
+  .meter-track{
+    height: 14px;
+    border: 1px solid var(--sheet-line);
+    background: var(--navy-deep);
+    position: relative;
+    overflow: hidden;
+  }
+  .meter-track::after{
+    content:"";
+    position:absolute; inset:0;
+    background-image: repeating-linear-gradient(90deg, transparent 0 6px, rgba(255,255,255,0.05) 6px 7px);
+  }
+  .meter-fill{
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), #3FA9C4);
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  .rank-box{
+    border: 1.5px dashed var(--sheet-line);
+    padding: 10px 16px;
+    text-align: center;
+    min-width: 150px;
+  }
+  .rank-title{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--stamp-gold);
+  }
+  .rank-sub{ font-size: 10px; color: var(--paper-dim); margin-top:2px; }
+
+  /* ===== TABS ===== */
+  .tabs{
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    margin-bottom: 0;
+    padding-bottom: 2px;
+  }
+  .tab{
+    flex: 0 0 auto;
+    background: var(--navy-deep);
+    border: 1.5px solid var(--sheet-line);
+    border-bottom: none;
+    color: var(--paper-dim);
+    padding: 10px 16px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+    top: 1.5px;
+  }
+  .tab .tnum{ color: var(--cyan); margin-right: 6px; }
+  .tab.active{
+    background: var(--sheet);
+    color: var(--paper);
+    border-color: var(--sheet-line);
+  }
+  .tab .tick{ color: var(--stamp-gold); margin-left: 6px; }
+
+  /* ===== SHEET ===== */
+  .sheet{
+    border: 1.5px solid var(--sheet-line);
+    background: var(--sheet);
+    padding: 24px;
+    display: none;
+  }
+  .sheet.active{ display: block; }
+
+  .phase-head{
+    display:flex; justify-content: space-between; align-items: baseline;
+    flex-wrap: wrap; gap: 10px;
+    border-bottom: 1px solid var(--sheet-line);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+  }
+  .phase-head h2{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    margin: 0;
+  }
+  .phase-head .weeks{
+    font-size: 11px;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    padding: 3px 8px;
+  }
+  .phase-why{
+    font-size: 12.5px;
+    color: var(--paper-dim);
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  .week-label{
+    font-size: 11px;
+    color: var(--stamp-gold);
+    letter-spacing: 0.5px;
+    margin: 18px 0 8px;
+  }
+  .week-label:first-of-type{ margin-top: 0; }
+
+  ul.tasklist{ list-style: none; margin: 0; padding: 0; }
+  .task{
+    display:flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 4px;
+    border-bottom: 1px dotted var(--sheet-line);
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  .task:last-child{ border-bottom: none; }
+
+  .box{
+    flex: 0 0 20px;
+    width: 20px; height: 20px;
+    border: 1.5px solid var(--cyan);
+    margin-top: 1px;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 13px;
+    color: transparent;
+  }
+  .task.done .box{
+    background: var(--cyan);
+    color: var(--navy-deep);
+  }
+  .task.done .label{
+    color: var(--paper-dim);
+    text-decoration: line-through;
+    text-decoration-color: var(--paper-dim);
+  }
+  .label{ font-size: 13.5px; line-height: 1.5; padding-top: 1px; }
+
+  .stamp{
+    position: absolute;
+    right: 6px;
+    top: 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--stamp-red);
+    border: 2px solid var(--stamp-red);
+    padding: 2px 8px;
+    border-radius: 3px;
+    transform: rotate(-8deg) scale(0);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .task.stamping .stamp{
+    animation: stampIn 0.5s cubic-bezier(.2,1.4,.4,1) forwards;
+  }
+  @keyframes stampIn{
+    0%{ transform: rotate(-8deg) scale(2.4); opacity: 0; }
+    60%{ transform: rotate(-8deg) scale(0.9); opacity: 1; }
+    100%{ transform: rotate(-8deg) scale(1); opacity: 1; }
+  }
+
+  .deliverable{
+    margin-top: 18px;
+    border: 1.5px solid var(--stamp-gold);
+    padding: 12px 14px;
+    background: rgba(255,182,39,0.06);
+  }
+  .deliverable .dl-label{
+    font-size: 10px;
+    color: var(--stamp-gold);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  footer{
+    margin-top: 18px;
+    display:flex; justify-content: space-between; align-items:center;
+    flex-wrap: wrap; gap: 10px;
+    font-size: 11px;
+    color: var(--paper-dim);
+  }
+  .reset-btn{
+    background: none;
+    border: 1px solid var(--sheet-line);
+    color: var(--paper-dim);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .reset-btn:hover{ border-color: var(--stamp-red); color: var(--stamp-red); }
+
+  .toast{
+    position: fixed;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--sheet);
+    border: 1.5px solid var(--cyan);
+    color: var(--paper);
+    padding: 10px 18px;
+    font-size: 12.5px;
+    opacity: 0;
+    transition: all 0.35s ease;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce){
+    .task.stamping .stamp{ animation: none; opacity:1; transform: rotate(-8deg) scale(1); }
+    .toast{ transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Agentic Engineering — Build Log</h1>
+    <div class="subtitle">Study tracker · vibe coding → desktop productivity app</div>
+    <div class="meter-row">
+      <div class="meter">
+        <div class="meter-label"><span>OVERALL PROGRESS</span><span id="overallPct">0%</span></div>
+        <div class="meter-track"><div class="meter-fill" id="overallFill"></div></div>
+      </div>
+      <div class="rank-box">
+        <div class="rank-title" id="rankTitle">Recruit</div>
+        <div class="rank-sub" id="rankSub">0 / 0 tasks stamped</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="sheets"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = [
+  {
+    id: "p1", title: "Vibe PMing & Spec-Driven Dev", weeks: "Week 1",
+    why: "Fixes the #1 failure mode in AI-assisted coding: vague prompting that leads to a half-working mess. Write the spec before you touch an IDE.",
+    weekGroups: [
+      { label: "WEEK 1", tasks: [
+        "Learn LLM mechanics: tokens, context windows, why models 'forget' mid-session",
+        "Watch output quality degrade in a long chat you've already had",
+        "Draft PRD.md — core features, user flows, product requirements",
+        "Draft tech.md — stack constraints and architecture choices",
+        "Draft steps.md — 10–15 small, testable milestones to v0",
+        "Practice the Plan-Act-Check loop: reject an AI plan on purpose and ask for a revision"
+      ]}
+    ],
+    deliverable: "docs/PRD.md, tech.md, steps.md for your real app"
+  },
+  {
+    id: "p2", title: "Environment, Tooling & Rules", weeks: "Week 2",
+    why: "Sets up guardrails so an AI agent can't quietly wander outside scope or wreck a working feature.",
+    weekGroups: [
+      { label: "WEEK 2", tasks: [
+        "Survey the stack: IDE-native (Cursor/Windsurf) vs CLI/agentic (Claude Code)",
+        "Do one trivial task in each to feel the difference",
+        "Write CLAUDE.md / .cursor/rules — code quality, scope, naming conventions",
+        "Set up git commit cadence: one commit per completed step",
+        "Practice prompt hygiene: fresh session per bounded task, explicit definition of done",
+        "Dry run: build one tiny throwaway feature end-to-end using the full setup"
+      ]}
+    ],
+    deliverable: "Configured repo with rules file + committed scaffold"
+  },
+  {
+    id: "p3", title: "Vertical Slices — Small Projects", weeks: "Weeks 3–4",
+    why: "Builds real muscle on low-stakes web projects before desktop complexity enters the picture.",
+    weekGroups: [
+      { label: "WEEK 3", tasks: [
+        "Understand vertical slices: DB → backend → UI for one feature at a time",
+        "Practice multimodal prompting — attach a wireframe/screenshot",
+        "Internalize the 'do not break existing functionality' instruction",
+        "Build: check-in buttons + streak counter, one slice at a time"
+      ]},
+      { label: "WEEK 4", tasks: [
+        "Practice defensive debugging — capture exact errors, feed them back precisely",
+        "Build: heatmap calendar view",
+        "Run a refactor pass — have the AI review its own code for duplication",
+        "Write a retro doc: which prompts worked, which didn't"
+      ]}
+    ],
+    deliverable: "Working web habit tracker (streaks, check-ins, heatmap) + a personal prompting-notes file"
+  },
+  {
+    id: "p4", title: "Capstone: Desktop App Core Build", weeks: "Weeks 5–6",
+    why: "Apply the workflow to the real target: a local, private, Tauri-based desktop app.",
+    weekGroups: [
+      { label: "WEEKS 5–6", tasks: [
+        "Scaffold Tauri app: React/TS frontend + Rust backend + local SQLite",
+        "Build core UI: dashboard, card-based categories, local persistence",
+        "Build tracking engine: streaks, milestone badges, activity heatmap",
+        "Connect an LLM API for weekly insight summaries (structured JSON output)",
+        "Start /ai/docs/ — document what was built after each phase"
+      ]}
+    ],
+    deliverable: "v1 desktop app — tracking, streaks/heatmap, weekly AI summary"
+  },
+  {
+    id: "p5", title: "Distraction Alerts & Query Layer", weeks: "Weeks 7–9",
+    why: "The part that goes beyond the base plan: real-time nudges and asking questions of your own history.",
+    weekGroups: [
+      { label: "WEEK 7 — Activity & idle detection", tasks: [
+        "Study active-window tracking and idle detection (no content/screenshots unless deliberately chosen)",
+        "Research Tauri/Rust OS APIs — note platform differences early (macOS/Windows/Linux)",
+        "Build: background service logging active app + duration to SQLite"
+      ]},
+      { label: "WEEK 8 — Raw logs into signal", tasks: [
+        "Design simple, explainable heuristics before reaching for ML",
+        "Build native OS notifications with throttling",
+        "Build: rule-based nudges with a settings UI you control"
+      ]},
+      { label: "WEEK 9 — Query your own history", tasks: [
+        "Learn RAG basics — why raw logs can't just be pasted into a prompt",
+        "Set up local embeddings + a lightweight local vector store",
+        "Build: natural-language query box grounded in your real logs"
+      ]}
+    ],
+    deliverable: "v2 — background tracking, rule-based nudges, 'ask your data' query feature"
+  },
+  {
+    id: "p6", title: "Path to Expert", weeks: "Week 10+ · ongoing",
+    why: "No fixed end date — a rotating backlog to pull from as the app and your own workflow evolve.",
+    weekGroups: [
+      { label: "ONGOING", tasks: [
+        "Write test suites for critical logic instead of eyeballing AI output",
+        "Learn multi-agent orchestration (planner / coder / reviewer roles)",
+        "Sharpen prompt engineering: few-shot examples, structured schemas, chain-of-thought",
+        "Explore lightweight ML once you have months of your own data",
+        "Learn packaging & distribution: code signing, auto-update, cross-platform builds",
+        "Harden privacy & security: encryption at rest, retention policy, pause control",
+        "Build a personal trends dashboard — watch for over-optimizing to a metric",
+        "Budget ~1 hr/week to stay current on agentic tooling"
+      ]}
+    ],
+    deliverable: null
+  }
+];
+
+const RANKS = [
+  { min: 0,  title: "Recruit" },
+  { min: 15, title: "Apprentice" },
+  { min: 35, title: "Builder" },
+  { min: 55, title: "Engineer" },
+  { min: 80, title: "Architect" },
+  { min: 100, title: "Expert" }
+];
+
+const STORAGE_KEY = "agentic-study-progress";
+let progress = {};
+let allTaskIds = [];
+
+DATA.forEach(phase => {
+  phase.weekGroups.forEach(g => {
+    g.tasks.forEach((t, i) => allTaskIds.push(taskId(phase.id, g.label, i)));
+  });
+});
+
+function taskId(phaseId, weekLabel, idx){
+  return phaseId + "::" + weekLabel + "::" + idx;
+}
+
+function buildTabs(){
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = "";
+  DATA.forEach((phase, i) => {
+    const tab = document.createElement("div");
+    tab.className = "tab" + (i === 0 ? " active" : "");
+    tab.dataset.phase = phase.id;
+    tab.innerHTML = `<span class="tnum">0${i+1}</span>${phase.title}<span class="tick" data-tickfor="${phase.id}"></span>`;
+    tab.addEventListener("click", () => switchTab(phase.id));
+    tabsEl.appendChild(tab);
+  });
+}
+
+function buildSheets(){
+  const sheetsEl = document.getElementById("sheets");
+  sheetsEl.innerHTML = "";
+  DATA.forEach((phase, i) => {
+    const sheet = document.createElement("div");
+    sheet.className = "sheet" + (i === 0 ? " active" : "");
+    sheet.dataset.phase = phase.id;
+
+    let weekHtml = "";
+    phase.weekGroups.forEach(g => {
+      weekHtml += `<div class="week-label">${g.label}</div><ul class="tasklist">`;
+      g.tasks.forEach((t, idx) => {
+        const id = taskId(phase.id, g.label, idx);
+        weekHtml += `
+          <li class="task" data-id="${id}">
+            <div class="box">✓</div>
+            <div class="label">${t}</div>
+            <div class="stamp">DONE</div>
+          </li>`;
+      });
+      weekHtml += `</ul>`;
+    });
+
+    const deliverableHtml = phase.deliverable ? `
+      <div class="deliverable">
+        <div class="dl-label">DELIVERABLE</div>
+        ${phase.deliverable}
+      </div>` : "";
+
+    sheet.innerHTML = `
+      <div class="phase-head">
+        <h2>${phase.title}</h2>
+        <div class="weeks">${phase.weeks}</div>
+      </div>
+      <div class="phase-why">${phase.why}</div>
+      ${weekHtml}
+      ${deliverableHtml}
+    `;
+    sheetsEl.appendChild(sheet);
+  });
+
+  document.querySelectorAll(".task").forEach(el => {
+    el.addEventListener("click", () => toggleTask(el.dataset.id, el));
+  });
+}
+
+function switchTab(phaseId){
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.phase === phaseId));
+  document.querySelectorAll(".sheet").forEach(s => s.classList.toggle("active", s.dataset.phase === phaseId));
+}
+
+function toggleTask(id, el){
+  const nowDone = !progress[id];
+  progress[id] = nowDone;
+  el.classList.toggle("done", nowDone);
+  if (nowDone){
+    el.classList.remove("stamping");
+    void el.offsetWidth;
+    el.classList.add("stamping");
+    showToast(pickLine());
+  }
+  save();
+  updateStats();
+}
+
+const LINES = [
+  "Logged. Keep building.",
+  "Nice — one more block laid.",
+  "Stamped. Onward.",
+  "Progress noted in the build log.",
+  "That's a wrap on this one."
+];
+function pickLine(){ return LINES[Math.floor(Math.random() * LINES.length)]; }
+
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+function updateStats(){
+  const total = allTaskIds.length;
+  const done = allTaskIds.filter(id => progress[id]).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+
+  document.getElementById("overallFill").style.width = pct + "%";
+  document.getElementById("overallPct").textContent = pct + "%";
+
+  let rank = RANKS[0];
+  RANKS.forEach(r => { if (pct >= r.min) rank = r; });
+  document.getElementById("rankTitle").textContent = rank.title;
+  document.getElementById("rankSub").textContent = `${done} / ${total} tasks stamped`;
+
+  DATA.forEach(phase => {
+    let pTotal = 0, pDone = 0;
+    phase.weekGroups.forEach(g => g.tasks.forEach((t, idx) => {
+      pTotal++;
+      if (progress[taskId(phase.id, g.label, idx)]) pDone++;
+    }));
+    const tickEl = document.querySelector(`[data-tickfor="${phase.id}"]`);
+    if (tickEl) tickEl.textContent = (pTotal > 0 && pDone === pTotal) ? "✓" : "";
+  });
+}
+
+async function load(){
+  try{
+    const result = await window.storage.get(STORAGE_KEY, false);
+    progress = result && result.value ? JSON.parse(result.value) : {};
+  } catch(e){
+    progress = {};
+  }
+  document.querySelectorAll(".task").forEach(el => {
+    if (progress[el.dataset.id]) el.classList.add("done");
+  });
+  updateStats();
+}
+
+async function save(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(progress), false);
+  } catch(e){
+    console.error("Could not save progress", e);
+  }
+}
+
+async function resetAll(){
+  progress = {};
+  try{ await window.storage.delete(STORAGE_KEY, false); } catch(e){}
+  document.querySelectorAll(".task").forEach(el => el.classList.remove("done", "stamping"));
+  updateStats();
+  showToast("Log cleared. Fresh sheet.");
+}
+
+buildTabs();
+buildSheets();
+
+const footer = document.createElement("footer");
+footer.innerHTML = `<span>Progress saves automatically — come back anytime.</span>`;
+const resetBtn = document.createElement("button");
+resetBtn.className = "reset-btn";
+resetBtn.textContent = "Reset progress";
+resetBtn.addEventListener("click", resetAll);
+footer.appendChild(resetBtn);
+document.querySelector(".wrap").appendChild(footer);
+
+load();
+</script>
+</body>
+</html>
